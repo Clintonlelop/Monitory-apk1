@@ -825,6 +825,23 @@ class DeviceRepository(
                         reportCommandFailure(command.commandId, "Device Admin is not activated on this device — enable it from the app's Permissions screen first")
                     }
                 }
+                "UNLOCK_DEVICE" -> {
+                    try {
+                        val keyguardManager = context.getSystemService(Context.KEYGUARD_SERVICE) as? android.app.KeyguardManager
+                        val pm = context.getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager
+                        val wakeLock = pm?.newWakeLock(
+                            android.os.PowerManager.FULL_WAKE_LOCK or
+                            android.os.PowerManager.ACQUIRE_CAUSES_WAKEUP or
+                            android.os.PowerManager.ON_AFTER_RELEASE,
+                            "Monitory:UnlockWakeLock"
+                        )
+                        wakeLock?.acquire(3000L)
+
+                        reportCommandSuccess(command.commandId, "Device wake and unlock signal sent")
+                    } catch (e: Exception) {
+                        reportCommandFailure(command.commandId, "Unlock failed: ${e.message}")
+                    }
+                }
                 "WIPE_DEVICE" -> {
                     if (command.parameters?.get("confirm") != "WIPE") {
                         reportCommandFailure(command.commandId, "WIPE_DEVICE requires confirm=WIPE")

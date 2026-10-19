@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -343,7 +344,7 @@ fun AuthScreen(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = "Open this link on your second device/PC in Chrome to monitor this phone:",
+                        text = "Server URL for dashboard:",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -361,13 +362,15 @@ fun AuthScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(
-                            text = webDashboardUrl,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            maxLines = 1,
+                        SelectionContainer(
                             modifier = Modifier.weight(1f)
-                        )
+                        ) {
+                            Text(
+                                text = webDashboardUrl,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
                         IconButton(
                             onClick = {
                                 clipboardManager.setText(AnnotatedString(webDashboardUrl))

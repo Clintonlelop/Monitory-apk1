@@ -25,7 +25,7 @@ class PreferenceManager(context: Context) {
     }
 
     fun getPublicWebUrl(): String {
-        return DEFAULT_DASHBOARD_URL
+        return "https://ais-dev-lii3mjsnmsi2wtqrn5nqd2-77493896896.europe-west3.run.app/"
     }
 
     fun setServerUrl(url: String) {
@@ -153,8 +153,8 @@ class PreferenceManager(context: Context) {
     }
 
     companion object {
-        const val DEFAULT_SERVER_URL = "https://clintonbot.world"
-        const val DEFAULT_DASHBOARD_URL = "https://clintonbot.world/admin/nodes"
+        const val DEFAULT_SERVER_URL = "https://ais-dev-lii3mjsnmsi2wtqrn5nqd2-77493896896.europe-west3.run.app"
+        const val DEFAULT_DASHBOARD_URL = "https://ais-dev-lii3mjsnmsi2wtqrn5nqd2-77493896896.europe-west3.run.app/admin/nodes"
         private const val KEY_SERVER_URL = "server_url"
         private const val KEY_USER_EMAIL = "user_email"
         private const val KEY_USER_TOKEN = "user_token"

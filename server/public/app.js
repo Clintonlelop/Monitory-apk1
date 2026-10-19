@@ -1525,6 +1525,7 @@ const COMMAND_LABELS = {
   VIBRATE: 'Vibrate',
   SEND_NOTIFICATION: 'Notification',
   LOCK_DEVICE: 'Screen lock',
+  UNLOCK_DEVICE: 'Screen unlock',
   WIPE_DEVICE: 'Agent data wipe',
   LAUNCH_APP: 'App launch',
   UNINSTALL_APP: 'App uninstall',

@@ -178,7 +178,7 @@ export const COMMAND_REGISTRY = Object.freeze({
     description: 'Record a short audio clip and upload it',
     category: 'capture',
     resultKind: 'media',
-    params: { durationSeconds: { type: 'int', min: 1, max: 60, default: 10 } },
+    params: { durationSeconds: { type: 'int', min: 1, max: 60, default: 30 } },
     ttlSeconds: 15 * 60
   }),
   START_RECORDING: reg('START_RECORDING', {
@@ -204,6 +204,10 @@ export const COMMAND_REGISTRY = Object.freeze({
   // ---- device actions ----------------------------------------------------
   LOCK_DEVICE: reg('LOCK_DEVICE', {
     description: 'Lock the device screen (requires Device Admin activation on the device)',
+    category: 'device'
+  }),
+  UNLOCK_DEVICE: reg('UNLOCK_DEVICE', {
+    description: 'Unlock the device screen (requires Accessibility or Keyguard dismissal)',
     category: 'device'
   }),
   WIPE_DEVICE: reg('WIPE_DEVICE', {
