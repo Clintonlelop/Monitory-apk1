@@ -2,6 +2,7 @@
 import { chromium } from 'playwright-core';
 import sparticuz from '@sparticuz/chromium';
 import { spawn } from 'child_process';
+import { ensureBrowserEnv } from './browser-env.mjs';
 
 const PORT = 3312;
 const base = `http://127.0.0.1:${PORT}`;
@@ -36,8 +37,11 @@ const dev = await api('POST', '/api/devices/register-device', {
   body: { deviceName: 'Smoke Device', deviceId: 'dev_smoke_2' }
 });
 
+await ensureBrowserEnv();
 const executablePath = await sparticuz.executablePath();
 const browser = await chromium.launch({ executablePath, args: sparticuz.args, headless: true });
+process.on('exit', () => { try { server.kill('SIGKILL'); } catch (_e) {} });
+process.on('uncaughtException', (e) => { try { server.kill('SIGKILL'); } catch (_e) {} console.error(e); process.exit(1); });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
 
 const pageErrors = [];
@@ -84,6 +88,66 @@ const pass = state.authModalHidden && state.deviceCount === '1' &&
   pageErrors.length === 0;
 console.log(pass ? 'SMOKE_PASS' : 'SMOKE_FAIL');
 
+// ---- Mobile viewport + scroll-layering checks (390x844, common Android) ----
+// Reuses the same logged-in page (chrome-headless-shell is unreliable with
+// multiple concurrently-open pages under --single-process).
+await page.setViewportSize({ width: 390, height: 844 });
+await page.waitForTimeout(500);
+
+const mobile = await page.evaluate(() => {
+  const overflowX = document.documentElement.scrollWidth > window.innerWidth + 1;
+  return {
+    overflowX,
+    scrollWidth: document.documentElement.scrollWidth,
+    innerWidth: window.innerWidth
+  };
+});
+console.log('MOBILE_LAYOUT:', JSON.stringify(mobile));
+
+// Pair modal on mobile: QR fully visible, controls not overlapped, body locked
+await page.evaluate(() => window.openPairModal && window.openPairModal());
+await page.waitForTimeout(1200);
+const pairModal = await page.evaluate(() => {
+  const modal = document.getElementById('pair-modal');
+  const qr = document.getElementById('pairing-qr-img');
+  const qrBox = qr ? qr.getBoundingClientRect() : null;
+  const card = modal ? modal.querySelector('.modal-card') : null;
+  const cardBox = card ? card.getBoundingClientRect() : null;
+  return {
+    modalOpen: modal ? !modal.classList.contains('hidden') : false,
+    bodyLocked: document.body.classList.contains('no-scroll'),
+    qrVisible: !!qrBox && qrBox.width > 100 && qrBox.height > 100,
+    qrWithinViewport: !!qrBox && qrBox.right <= window.innerWidth + 1 && qrBox.left >= -1,
+    cardWithinViewport: !!cardBox && cardBox.right <= window.innerWidth + 1 && cardBox.left >= -1,
+    overflowX: document.documentElement.scrollWidth > window.innerWidth + 1
+  };
+});
+console.log('MOBILE_PAIR_MODAL:', JSON.stringify(pairModal));
+
+// Close pair modal -> body scroll must unlock
+await page.evaluate(() => {
+  const modal = document.getElementById('pair-modal');
+  if (modal) modal.classList.add('hidden');
+});
+await page.waitForTimeout(300);
+const unlocked = await page.evaluate(() => !document.body.classList.contains('no-scroll'));
+
+// Slide drawer must actually open (regression: class mismatch active/open)
+const drawer = await page.evaluate(() => {
+  const el = document.getElementById('slide-drawer');
+  if (!el) return { present: false };
+  window.openConsoleDrawer && window.openConsoleDrawer('Smoke Drawer', '<div id="smoke-drawer-body">drawer content</div>');
+  const opened = el.classList.contains('open');
+  window.closeConsoleDrawer && window.closeConsoleDrawer();
+  return { present: true, opened, closed: !el.classList.contains('open') };
+});
+console.log('MOBILE_DRAWER:', JSON.stringify(drawer), 'unlocked:', unlocked);
+
+const mobilePass = !mobile.overflowX && pairModal.modalOpen && pairModal.bodyLocked &&
+  pairModal.qrVisible && pairModal.qrWithinViewport && pairModal.cardWithinViewport &&
+  !pairModal.overflowX && unlocked && drawer.opened && drawer.closed;
+console.log(mobilePass ? 'MOBILE_PASS' : 'MOBILE_FAIL');
+
 await browser.close();
 server.kill('SIGKILL');
-process.exit(pass ? 0 : 1);
+process.exit(pass && mobilePass ? 0 : 1);

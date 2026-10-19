@@ -16,3 +16,10 @@
 local.properties
 .env
 debug.keystore
+node_modules/
+build/
+*.apk
+*.aab
+# Test/runtime upload artifacts (tracked historical files are intentionally kept)
+server/uploads/*
+!server/uploads/.gitkeep
