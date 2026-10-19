@@ -1,5 +1,6 @@
 package com.example.data.remote
 
+import com.example.BuildConfig
 import com.example.data.prefs.PreferenceManager
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -39,7 +40,7 @@ class ApiClient(private val preferenceManager: PreferenceManager) {
         // Sensitive HTTP bodies (tokens, SMS/notification/call content) must
         // never reach logcat in release builds. Debug logs are redacted.
         val logging = HttpLoggingInterceptor().apply {
-            level = if (com.example.BuildConfig.DEBUG) {
+            level = if (BuildConfig.DEBUG) {
                 HttpLoggingInterceptor.Level.BASIC
             } else {
                 HttpLoggingInterceptor.Level.NONE
