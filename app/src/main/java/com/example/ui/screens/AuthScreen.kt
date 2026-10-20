@@ -39,7 +39,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -85,7 +84,6 @@ fun AuthScreen(
     val password by viewModel.userPassword.collectAsState()
     val username by viewModel.username.collectAsState()
     val isRegisterMode by viewModel.isRegisterMode.collectAsState()
-    val serverUrl by viewModel.serverUrl.collectAsState()
     val webDashboardUrl = viewModel.webDashboardUrl
 
     var passwordVisible by remember { mutableStateOf(false) }
@@ -344,7 +342,11 @@ fun AuthScreen(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = "Server URL for dashboard:",
+                        text = if (webDashboardUrl.isBlank()) {
+                            "No server configured yet — open Server Settings below."
+                        } else {
+                            "Server & dashboard address (open in Chrome on a second device):"
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -366,15 +368,18 @@ fun AuthScreen(
                             modifier = Modifier.weight(1f)
                         ) {
                             Text(
-                                text = webDashboardUrl,
+                                text = webDashboardUrl.ifBlank { "Not configured" },
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.testTag("dashboard_url_label")
                             )
                         }
                         IconButton(
                             onClick = {
-                                clipboardManager.setText(AnnotatedString(webDashboardUrl))
-                                Toast.makeText(context, "Dashboard link copied!", Toast.LENGTH_SHORT).show()
+                                if (webDashboardUrl.isNotBlank()) {
+                                    clipboardManager.setText(AnnotatedString(webDashboardUrl))
+                                    Toast.makeText(context, "Dashboard link copied!", Toast.LENGTH_SHORT).show()
+                                }
                             },
                             modifier = Modifier.size(36.dp)
                         ) {
@@ -404,18 +409,11 @@ fun AuthScreen(
             }
 
             if (showServerSettings) {
-                OutlinedTextField(
-                    value = serverUrl,
-                    onValueChange = { viewModel.setServerUrl(it) },
-                    label = { Text("Server URL") },
-                    singleLine = true,
+                com.example.ui.components.ServerUrlSection(
+                    viewModel = viewModel,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.secondary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                    )
+                        .padding(horizontal = 8.dp)
                 )
             }
 

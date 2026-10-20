@@ -17,7 +17,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.QrCode
@@ -31,7 +30,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -44,6 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.components.ServerUrlSection
 import com.example.ui.viewmodel.MainViewModel
 
 @Composable
@@ -51,7 +50,6 @@ fun PairingScreen(
     viewModel: MainViewModel,
     modifier: Modifier = Modifier
 ) {
-    val serverUrl by viewModel.serverUrl.collectAsState()
     val pairingCode by viewModel.pairingCode.collectAsState()
     val deviceName by viewModel.deviceName.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
@@ -115,19 +113,9 @@ fun PairingScreen(
                 modifier = Modifier.padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                OutlinedTextField(
-                    value = serverUrl,
-                    onValueChange = { viewModel.setServerUrl(it) },
-                    label = { Text("Management Server URL") },
-                    placeholder = { Text("http://10.0.2.2:8080 or https://...") },
-                    leadingIcon = {
-                        Icon(Icons.Default.Dns, contentDescription = "Server URL")
-                    },
-                    singleLine = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("server_url_input"),
-                    shape = RoundedCornerShape(12.dp)
+                ServerUrlSection(
+                    viewModel = viewModel,
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 OutlinedTextField(

@@ -4,6 +4,7 @@
 import { chromium } from 'playwright-core';
 import sparticuz from '@sparticuz/chromium';
 import { spawn } from 'child_process';
+import { ensureBrowserEnv } from './browser-env.mjs';
 
 const PORT = 3311;
 const base = `http://127.0.0.1:${PORT}`;
@@ -76,6 +77,7 @@ const files = await api('POST', `/api/devices/${deviceId}/files`, {
 if (files.status !== 200) throw new Error('files ingest failed');
 console.log('[3] payloads planted (now requires device auth):', files.status);
 
+await ensureBrowserEnv();
 const executablePath = await sparticuz.executablePath();
 const browser = await chromium.launch({
   executablePath,

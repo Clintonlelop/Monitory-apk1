@@ -71,8 +71,13 @@ class ApiClient(private val preferenceManager: PreferenceManager) {
     private var currentBaseUrl: String? = null
 
     fun getService(): ApiService {
-        val baseUrl = preferenceManager.getServerUrl().let {
-            if (it.endsWith("/")) it else "$it/"
+        val baseUrl = com.example.data.prefs.PreferenceManager.deriveApiBaseUrl(
+            preferenceManager.getServerUrl()
+        )
+        if (baseUrl.isBlank() || baseUrl == "/") {
+            throw java.io.IOException(
+                "No server configured. Open Server Settings and enter the address of your Monitory backend first."
+            )
         }
         if (currentRetrofit == null || currentBaseUrl != baseUrl) {
             currentBaseUrl = baseUrl

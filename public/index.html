@@ -513,6 +513,10 @@
             <span>🔒 Lock Screen</span>
             <small style="opacity:0.7;">needs device admin</small>
           </button>
+          <button class="secondary cmd-btn" data-cmd="UNLOCK_DEVICE" title="Wakes the display and requests keyguard dismissal. A secure screen lock (PIN/pattern/password) can never be bypassed — the device user must authenticate." style="margin:0; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+            <span>🔓 Wake / Unlock</span>
+            <small style="opacity:0.7;">secure locks need the user</small>
+          </button>
           <button class="primary cmd-btn" data-cmd="WIPE_DEVICE" title="Wipes the agent's own data and unpairs — NOT a factory reset" style="margin:0; padding: 16px; background: #f43f5e; box-shadow: none; display: flex; flex-direction: column; align-items: center; gap: 8px;">
             <span>⚠️ Wipe Node Data</span>
             <small style="opacity:0.8;">agent data only</small>
@@ -862,11 +866,11 @@
         </div>
 
         <!-- DUAL PAIRING CONTAINER: SCANNABLE QR CODE + MANUAL 6-DIGIT CODE -->
-        <div style="display: grid; grid-template-columns: 210px 1fr; gap: 16px; background: var(--bg); padding: 18px; border-radius: 12px; border: 1px dashed var(--accent); margin-bottom: 14px; align-items: center;">
+        <div class="pair-gen-grid">
           
           <!-- REAL SQUARE SCANNABLE QR CODE -->
           <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: #ffffff; padding: 12px; border-radius: 10px; border: 1px solid var(--line); position: relative; width: 100%; box-sizing: border-box;" id="qr-box-wrapper">
-            <img id="pairing-qr-img" src="" alt="Pairing QR Code" style="width: 175px; height: 175px; display: block; border-radius: 4px;" />
+            <img id="pairing-qr-img" src="" alt="Pairing QR Code" />
             <div id="qr-expired-overlay" style="display: none; position: absolute; inset: 0; background: rgba(15, 23, 42, 0.92); color: #f87171; flex-direction: column; align-items: center; justify-content: center; text-align: center; border-radius: 10px; padding: 10px; font-size: 11px; font-weight: 700;">
               <span>⚠️ Code Expired</span>
               <button class="primary" style="margin-top: 8px; padding: 6px 10px; font-size: 10px;" onclick="generatePairingCode()">↻ Refresh QR</button>
@@ -878,7 +882,7 @@
           <div style="display: flex; flex-direction: column; justify-content: center; gap: 10px;">
             <div>
               <small style="font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;">Manual Enrollment Code</small>
-              <div class="pairing-code-display" id="modal-pairing-code" style="font-size: 2.4rem; letter-spacing: 6px; font-weight: 800; color: var(--accent); font-family: 'JetBrains Mono', monospace; margin: 4px 0;">
+              <div class="pairing-code-display" id="modal-pairing-code" style="font-weight: 800; color: var(--accent); font-family: 'JetBrains Mono', monospace; margin: 4px 0;">
                 ------
               </div>
             </div>

@@ -131,6 +131,16 @@
             android:taskAffinity=""
             android:theme="@android:style/Theme.Material.Light.Dialog.Alert" />
 
+        <!-- Transparent UI for UNLOCK_DEVICE: wakes the display and *requests*
+             keyguard dismissal (never bypasses a secure screen lock) -->
+        <activity
+            android:name=".service.UnlockPromptActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
         <!-- Device Admin receiver (opt-in activation via system dialog) -->
         <receiver
             android:name=".service.AppDeviceAdminReceiver"

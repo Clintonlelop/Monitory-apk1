@@ -128,6 +128,40 @@ class DeviceRepository(
         }
     }
 
+    /**
+     * Verifies that a Monitory backend answers at the configured server URL.
+     * Checks the real health endpoint contract (`/health`, `/api/health`, …)
+     * and reports the backend-confirmed server address.
+     */
+    suspend fun testConnection(): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            val base = preferenceManager.getServerUrl()
+            if (base.isBlank()) {
+                return@withContext Result.failure(Exception("No server configured. Enter the address of your Monitory backend first."))
+            }
+            val response = apiClient.getService().getHealth()
+            if (!response.isSuccessful) {
+                return@withContext Result.failure(Exception("Server answered with HTTP ${response.code()} — this does not look like a healthy Monitory backend."))
+            }
+            val body = response.body()
+            if (body == null || (body.status != null && body.status != "healthy")) {
+                return@withContext Result.failure(Exception("The address responded but did not report a healthy Monitory backend. Check that you entered the backend API address, not a web page."))
+            }
+            val dbMode = if (body.postgres == true) "PostgreSQL" else "Embedded store"
+            Result.success("Connected to $base — backend healthy ($dbMode).")
+        } catch (e: javax.net.ssl.SSLException) {
+            Result.failure(Exception("TLS/SSL connection failed. The server certificate may be invalid, expired, or issued for a different hostname."))
+        } catch (e: java.net.UnknownHostException) {
+            Result.failure(Exception("Server host not found. Check the address for typos and your network connection."))
+        } catch (e: java.net.SocketTimeoutException) {
+            Result.failure(Exception("The server did not respond in time. Check the address and that the backend is running."))
+        } catch (e: java.io.IOException) {
+            Result.failure(Exception("Could not reach the server: ${e.message}"))
+        } catch (e: Exception) {
+            Result.failure(Exception(e.message ?: "Connection test failed"))
+        }
+    }
+
     suspend fun signInAndConnect(serverUrl: String, email: String, password: String): Result<String> = withContext(Dispatchers.IO) {
         try {
             preferenceManager.setServerUrl(serverUrl)
@@ -826,20 +860,46 @@ class DeviceRepository(
                     }
                 }
                 "UNLOCK_DEVICE" -> {
+                    // Android does not allow an ordinary app to bypass an
+                    // authenticated lock screen. This command turns the display
+                    // on and *requests* keyguard dismissal via the only
+                    // supported API (KeyguardManager.requestDismissKeyguard).
+                    // The final result is reported from that callback and is
+                    // honest about secure locks: a wake signal is never reported
+                    // as "unlocked".
                     try {
-                        val keyguardManager = context.getSystemService(Context.KEYGUARD_SERVICE) as? android.app.KeyguardManager
-                        val pm = context.getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager
-                        val wakeLock = pm?.newWakeLock(
-                            android.os.PowerManager.FULL_WAKE_LOCK or
-                            android.os.PowerManager.ACQUIRE_CAUSES_WAKEUP or
-                            android.os.PowerManager.ON_AFTER_RELEASE,
-                            "Monitory:UnlockWakeLock"
-                        )
-                        wakeLock?.acquire(3000L)
-
-                        reportCommandSuccess(command.commandId, "Device wake and unlock signal sent")
+                        val unlockIntent = android.content.Intent(
+                            context,
+                            com.example.service.UnlockPromptActivity::class.java
+                        ).apply {
+                            putExtra(com.example.service.UnlockPromptActivity.EXTRA_COMMAND_ID, command.commandId)
+                            addFlags(
+                                android.content.Intent.FLAG_ACTIVITY_NEW_TASK or
+                                    android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                                    android.content.Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
+                            )
+                        }
+                        context.startActivity(unlockIntent)
                     } catch (e: Exception) {
-                        reportCommandFailure(command.commandId, "Unlock failed: ${e.message}")
+                        // Fall back to wake-only, reported honestly.
+                        try {
+                            @Suppress("DEPRECATION")
+                            val pm = context.getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager
+                            val wakeLock = pm?.newWakeLock(
+                                android.os.PowerManager.FULL_WAKE_LOCK or
+                                    android.os.PowerManager.ACQUIRE_CAUSES_WAKEUP or
+                                    android.os.PowerManager.ON_AFTER_RELEASE,
+                                "Monitory:UnlockWakeLock"
+                            )
+                            wakeLock?.acquire(3000L)
+                            reportCommandFailure(
+                                command.commandId,
+                                "Display wake signal sent only — keyguard dismissal could not be requested on this device (${e.message}). " +
+                                    "A secure screen lock (PIN/pattern/password) can never be bypassed by this app."
+                            )
+                        } catch (wakeEx: Exception) {
+                            reportCommandFailure(command.commandId, "Unlock failed: ${wakeEx.message}")
+                        }
                     }
                 }
                 "WIPE_DEVICE" -> {
@@ -890,7 +950,7 @@ class DeviceRepository(
                     }
                 }
                 "RECORD_AUDIO" -> {
-                    val seconds = (command.parameters?.get("durationSeconds") ?: "10").toIntOrNull()?.coerceIn(1, 60) ?: 10
+                    val seconds = (command.parameters?.get("durationSeconds") ?: "30").toIntOrNull()?.coerceIn(1, 60) ?: 30
                     val started = audioRecorderHelper.startRecording()
                     if (started == null) {
                         reportCommandFailure(command.commandId, "Audio recording failed — microphone unavailable (permission denied or in use). Open the app and retry.")
@@ -932,7 +992,22 @@ class DeviceRepository(
                 }
             }
         } catch (e: Exception) {
-            reportCommandFailure(command.commandId, e.message ?: "Execution error")
+            // Persist a complete diagnostic report (full nested stack traces —
+            // printStackTrace's "…N more" abbreviation is never used) locally,
+            // and report an expanded (redacted) trace to the server.
+            val report = com.example.diagnostics.CrashDiagnostics.buildReport(
+                context = context,
+                throwable = e,
+                operation = "command ${command.commandType} (${command.commandId})",
+                connectionState = if (webSocketManager.isConnected.value) "websocket connected" else "websocket disconnected"
+            )
+            try {
+                com.example.diagnostics.CrashReportStore(context).write(report)
+            } catch (_: Exception) {}
+            reportCommandFailure(
+                command.commandId,
+                com.example.diagnostics.CrashDiagnostics.formatThrowable(e).take(2000)
+            )
         }
     }
 
@@ -1011,6 +1086,16 @@ class DeviceRepository(
                 )
             } catch (_: Exception) {}
         }
+    }
+
+    /** Fire-and-forget variant for callers outside coroutines (e.g. activities). */
+    fun reportCommandSuccessAsync(commandId: String, result: String) {
+        scope.launch { reportCommandSuccess(commandId, result) }
+    }
+
+    /** Fire-and-forget variant for callers outside coroutines (e.g. activities). */
+    fun reportCommandFailureAsync(commandId: String, error: String) {
+        scope.launch { reportCommandFailure(commandId, error) }
     }
 
     // ------------------------------------------------------------------

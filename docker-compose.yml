@@ -6,9 +6,10 @@ services:
     container_name: devicemanager-db
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgrespassword
-      POSTGRES_DB: devicemanager
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      # Set POSTGRES_PASSWORD in your .env — no password is committed here.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-devicemanager}
     ports:
       - "5432:5432"
     volumes:
@@ -31,8 +32,10 @@ services:
         condition: service_healthy
     environment:
       PORT: 8080
-      DATABASE_URL: postgres://postgres:postgrespassword@postgres:5432/devicemanager
-      JWT_SECRET: production_secure_jwt_secret_key_89214710
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-devicemanager}
+      # Set JWT_SECRET in your .env (see .env.example). A previously committed
+      # secret must be treated as compromised and rotated.
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
     ports:
       - "8080:8080"
     volumes:

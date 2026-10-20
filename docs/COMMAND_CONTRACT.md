@@ -88,6 +88,7 @@ produces `COMPLETED`; only the device's validated result does.
 | `STOP_RECORDING` | — | — | finalize + upload video → `POST /videos` | media JSON |
 | `RECORDING_STATUS` | — | — | session state | text JSON |
 | `LOCK_DEVICE` | — | Device Admin | `DevicePolicyManager.lockNow()` | text |
+| `UNLOCK_DEVICE` | — | visible system prompt | wakes the display and **requests** keyguard dismissal via `KeyguardManager.requestDismissKeyguard` (translucent activity). A secure screen lock (PIN/pattern/password) is **never** bypassed — if one is set, the device user must authenticate. The result text distinguishes “keyguard dismissed” from “wake signal only” | text |
 | `WIPE_DEVICE` | `confirm="WIPE"` (**required**) | visible confirm | wipes agent data + unpairs (NOT a factory reset) | text |
 | `LAUNCH_APP` | `packageName` (required) | — | launch intent | text |
 | `UNINSTALL_APP` | `packageName` (required) | user confirms system dialog | uninstall dialog | text |

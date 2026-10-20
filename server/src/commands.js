@@ -207,7 +207,7 @@ export const COMMAND_REGISTRY = Object.freeze({
     category: 'device'
   }),
   UNLOCK_DEVICE: reg('UNLOCK_DEVICE', {
-    description: 'Unlock the device screen (requires Accessibility or Keyguard dismissal)',
+    description: 'Wake the display and request keyguard dismissal. A secure screen lock (PIN/pattern/password) can never be bypassed — if one is set, the device user must authenticate and the result reports that honestly.',
     category: 'device'
   }),
   WIPE_DEVICE: reg('WIPE_DEVICE', {
@@ -239,8 +239,21 @@ export const COMMAND_REGISTRY = Object.freeze({
 
 export const ALLOWED_COMMAND_TYPES = Object.freeze(new Set(Object.keys(COMMAND_REGISTRY)));
 
+/** Legacy command names accepted on ingress and normalized to the registry key. */
+const COMMAND_TYPE_ALIASES = Object.freeze({
+  RECORD_SCREEN: 'START_RECORDING'
+});
+
+/** Canonical registry key for a (possibly legacy) command type; null when unknown. */
+export function normalizeCommandType(raw) {
+  if (typeof raw !== 'string') return null;
+  const key = raw.trim().toUpperCase();
+  return COMMAND_TYPE_ALIASES[key] || key;
+}
+
 export function getCommandSpec(commandType) {
-  return COMMAND_REGISTRY[commandType] || null;
+  const key = normalizeCommandType(commandType);
+  return key ? (COMMAND_REGISTRY[key] || null) : null;
 }
 
 // ---------------------------------------------------------------------------

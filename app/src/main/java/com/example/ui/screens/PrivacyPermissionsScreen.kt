@@ -414,6 +414,11 @@ fun PrivacyPermissionsScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            SectionHeader("Diagnostics")
+            CrashDiagnosticsCard()
+
+            Spacer(modifier = Modifier.height(20.dp))
+
             Button(
                 onClick = { showDisconnectDialog = true },
                 modifier = Modifier

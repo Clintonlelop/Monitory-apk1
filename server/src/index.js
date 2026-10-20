@@ -1638,7 +1638,9 @@ app.post('/api/devices/:id/commands', requireUser, requireDeviceOwner, ah(async 
   if (!spec) {
     return res.status(400).json({ error: `Unknown commandType. Allowed: ${[...ALLOWED_COMMAND_TYPES].join(', ')}` });
   }
-  const validated = validateAndNormalizeParams(commandType, parameters);
+  // Store and deliver the canonical registry key (aliases are normalized).
+  const canonicalType = spec.type;
+  const validated = validateAndNormalizeParams(canonicalType, parameters);
   if (validated.error) {
     return res.status(400).json({ error: validated.error });
   }
@@ -1664,12 +1666,12 @@ app.post('/api/devices/:id/commands', requireUser, requireDeviceOwner, ah(async 
 
   const commandId = 'cmd_' + Date.now() + '_' + crypto.randomBytes(3).toString('hex');
   const now = Date.now();
-  const expiresAt = now + ttlMsFor(commandType, ttlSeconds);
+  const expiresAt = now + ttlMsFor(canonicalType, ttlSeconds);
 
   const command = {
     commandId,
     deviceId: id,
-    commandType,
+    commandType: canonicalType,
     parameters: validated.params,
     status: CMD_STATUS.QUEUED,
     timestamp: now,
@@ -1683,7 +1685,7 @@ app.post('/api/devices/:id/commands', requireUser, requireDeviceOwner, ah(async 
     idempotencyKey: idem
   });
 
-  logAudit(req.user.id, id, 'DISPATCH_COMMAND', { commandType, commandId }, req.ip);
+  logAudit(req.user.id, id, 'DISPATCH_COMMAND', { commandType: canonicalType, commandId }, req.ip);
 
   // Attempt live delivery; the command stays queued if the device is offline.
   const dispatched = wsManager.sendCommandToDevice(id, command);

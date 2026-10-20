@@ -893,3 +893,106 @@ footer {
   .secondary { margin: 14px; width: calc(100% - 28px); }
   footer { gap: 10px; line-height: 1.5; }
 }
+
+/* ============================================================
+   Scroll & layering fixes
+   (nested scroll containers, body scroll lock, responsive pairing)
+   ============================================================ */
+
+/* Every fixed panel is its own scroll container, so wheel/touch scrolling
+   acts on the panel the user is interacting with — never on the page
+   behind it. overscroll-behavior: contain stops scroll chaining. */
+.sidebar {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.modal-overlay {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.auth-card, .modal-card {
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  overflow-wrap: anywhere;
+}
+
+/* While a modal, drawer or the mobile nav is open, the page behind is
+   locked so stray swipes cannot scroll hidden content. */
+body.no-scroll {
+  overflow: hidden;
+}
+
+.drawer-overlay {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Pairing layout: two columns on desktop, stacked on narrow screens so the
+   QR code stays fully visible and scannable and controls never overlap. */
+.pair-gen-grid {
+  display: grid;
+  grid-template-columns: 210px minmax(0, 1fr);
+  gap: 16px;
+  background: var(--bg);
+  padding: 18px;
+  border-radius: 12px;
+  border: 1px dashed var(--accent);
+  margin-bottom: 14px;
+  align-items: center;
+}
+
+#pairing-qr-img {
+  width: min(175px, 62vw);
+  height: auto;
+  aspect-ratio: 1 / 1;
+  display: block;
+  border-radius: 4px;
+}
+
+/* Media previews must fit the viewport */
+#media-lightbox img, #media-lightbox video {
+  max-width: 100%;
+  max-height: calc(100dvh - 140px);
+  object-fit: contain;
+}
+
+@media (max-width: 640px) {
+  .pair-gen-grid {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    padding: 14px;
+    gap: 12px;
+  }
+  .modal-overlay { padding: 10px; align-items: flex-start; }
+  .auth-card, .modal-card {
+    max-height: calc(100dvh - 20px);
+    padding: 18px;
+    border-radius: 12px;
+    width: 100%;
+  }
+  .pairing-code-display {
+    font-size: 1.75rem;
+    letter-spacing: 4px;
+    word-break: break-word;
+    max-width: 100%;
+  }
+  .tabs-bar {
+    flex-wrap: nowrap;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tab-btn { scroll-snap-align: start; min-height: 40px; }
+  .modal-footer { flex-wrap: wrap; gap: 8px; }
+  .modal-footer button, .cmd-btn, .btn, .primary, .secondary {
+    min-height: 44px;
+  }
+}

@@ -57,17 +57,13 @@ class DeviceWebSocketManager(
             val serverUrl = preferenceManager.getServerUrl().trim()
             if (serverUrl.isBlank()) return
 
-            val cleanUrl = if (serverUrl.endsWith("/")) serverUrl else "$serverUrl/"
-            var wsBase = cleanUrl
-                .replace("https://", "wss://")
-                .replace("http://", "ws://")
-            if (!wsBase.startsWith("ws://") && !wsBase.startsWith("wss://")) {
-                wsBase = "ws://$wsBase"
+            // Derive the device WebSocket endpoint from the configured HTTP(S)
+            // base URL using the backend route contract (/ws/device).
+            val fullWsUrl = buildString {
+                append(com.example.data.prefs.PreferenceManager.deriveWsDeviceUrl(serverUrl))
+                append("?deviceId=").append(URLEncoder.encode(preferenceManager.getDeviceId(), "UTF-8"))
+                append("&token=").append(URLEncoder.encode(preferenceManager.getAuthToken() ?: "", "UTF-8"))
             }
-
-            val deviceId = URLEncoder.encode(preferenceManager.getDeviceId(), "UTF-8")
-            val token = URLEncoder.encode(preferenceManager.getAuthToken() ?: "", "UTF-8")
-            val fullWsUrl = "${wsBase}ws/device?deviceId=$deviceId&token=$token"
 
             val request = Request.Builder().url(fullWsUrl).build()
 

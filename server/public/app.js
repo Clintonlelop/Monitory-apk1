@@ -1068,6 +1068,23 @@ function updateMapLocation(loc) {
   }
 }
 
+
+// ---- Scroll & overlay management -------------------------------------------
+// Lock body scrolling while any modal, drawer or the mobile nav is open so
+// stray swipes never scroll the page behind the surface being used.
+(function() {
+  const OVERLAY_OPEN = '.modal-overlay:not(.hidden), .drawer-overlay.open, .sidebar.open';
+  function updateBodyScrollLock() {
+    document.body.classList.toggle('no-scroll', Boolean(document.querySelector(OVERLAY_OPEN)));
+  }
+  window.updateBodyScrollLock = updateBodyScrollLock;
+  const observer = new MutationObserver(updateBodyScrollLock);
+  document.querySelectorAll('.modal-overlay, .drawer-overlay, .sidebar').forEach(el => {
+    observer.observe(el, { attributes: true, attributeFilter: ['class'] });
+  });
+  updateBodyScrollLock();
+})();
+
 // SLIDE DRAWER MANAGEMENT & DETAIL VIEWS
 window.openConsoleDrawer = function(title, htmlContent) {
   const drawer = document.getElementById('slide-drawer');
@@ -1077,14 +1094,14 @@ window.openConsoleDrawer = function(title, htmlContent) {
   if (drawer && dTitle && dBody) {
     dTitle.textContent = title;
     dBody.innerHTML = htmlContent;
-    drawer.classList.add('active');
+    drawer.classList.add('open');
   }
 };
 
 window.closeConsoleDrawer = function() {
   const drawer = document.getElementById('slide-drawer');
   if (drawer) {
-    drawer.classList.remove('active');
+    drawer.classList.remove('open');
   }
 };
 
@@ -1525,7 +1542,7 @@ const COMMAND_LABELS = {
   VIBRATE: 'Vibrate',
   SEND_NOTIFICATION: 'Notification',
   LOCK_DEVICE: 'Screen lock',
-  UNLOCK_DEVICE: 'Screen unlock',
+  UNLOCK_DEVICE: 'Wake / unlock screen',
   WIPE_DEVICE: 'Agent data wipe',
   LAUNCH_APP: 'App launch',
   UNINSTALL_APP: 'App uninstall',

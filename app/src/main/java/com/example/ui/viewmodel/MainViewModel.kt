@@ -60,6 +60,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val currentScreen: StateFlow<Screen> = _currentScreen.asStateFlow()
 
     val serverUrl = MutableStateFlow(prefs.getServerUrl())
+    val serverUrlError = MutableStateFlow<String?>(null)
+    val isServerConfigured = MutableStateFlow(prefs.isServerConfigured())
     val userEmail = MutableStateFlow(prefs.getUserEmail() ?: "")
     val userPassword = MutableStateFlow("")
     val username = MutableStateFlow("")
@@ -73,6 +75,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _uiState = MutableStateFlow<UiState>(UiState.Idle)
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
+    private val _connectionState = MutableStateFlow<ConnectionUiState>(ConnectionUiState.Idle)
+    val connectionState: StateFlow<ConnectionUiState> = _connectionState.asStateFlow()
+
     init {
         // Automatically start service if already paired
         if (prefs.isPaired()) {
@@ -85,9 +90,57 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _currentScreen.value = screen
     }
 
+    /**
+     * Edits the server URL. The raw input is kept for the text field, the
+     * validated URL is persisted only when it is valid (blank clears the
+     * configuration). Invalid input never overwrites a saved URL and produces
+     * an inline error message.
+     */
     fun setServerUrl(url: String) {
         serverUrl.value = url
-        prefs.setServerUrl(url)
+        if (url.isBlank()) {
+            prefs.setServerUrl("")
+            serverUrlError.value = null
+            isServerConfigured.value = false
+            _connectionState.value = ConnectionUiState.Idle
+            return
+        }
+        val validation = com.example.data.prefs.PreferenceManager.validateServerUrl(url)
+        if (validation.isValid) {
+            prefs.setServerUrl(validation.normalized!!)
+            serverUrlError.value = null
+            isServerConfigured.value = true
+        } else {
+            serverUrlError.value = validation.error
+        }
+    }
+
+    /**
+     * Verifies that the configured server is reachable and is a Monitory
+     * backend before the user tries to pair or sign in.
+     */
+    fun testServerConnection() {
+        val raw = serverUrl.value
+        val validation = com.example.data.prefs.PreferenceManager.validateServerUrl(raw)
+        if (!validation.isValid) {
+            serverUrlError.value = validation.error
+            _connectionState.value = ConnectionUiState.Error(validation.error ?: "Invalid server address")
+            return
+        }
+        prefs.setServerUrl(validation.normalized!!)
+        isServerConfigured.value = true
+
+        viewModelScope.launch {
+            _connectionState.value = ConnectionUiState.Testing
+            _connectionState.value = try {
+                app.repository.testConnection().fold(
+                    onSuccess = { message -> ConnectionUiState.Success(message) },
+                    onFailure = { err -> ConnectionUiState.Error(err.message ?: "Connection test failed") }
+                )
+            } catch (e: Exception) {
+                ConnectionUiState.Error(e.message ?: "Connection test failed")
+            }
+        }
     }
 
     fun setUserEmail(email: String) {
@@ -119,13 +172,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun signIn() {
         val email = userEmail.value.trim()
         val pass = userPassword.value
+        if (!ensureServerConfigured()) return
         if (email.isBlank() || pass.isBlank()) {
             _uiState.value = UiState.Error("Please enter email and password")
             return
         }
 
-        val targetUrl = serverUrl.value.trim().removeSuffix("/")
-        prefs.setServerUrl(targetUrl)
+        val targetUrl = prefs.getServerUrl()
 
         viewModelScope.launch {
             _uiState.value = UiState.Loading("Signing in to account...")
@@ -143,13 +196,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun registerAccount() {
         val email = userEmail.value.trim()
         val pass = userPassword.value
+        if (!ensureServerConfigured()) return
         if (email.isBlank() || pass.isBlank()) {
             _uiState.value = UiState.Error("Please enter email and password")
             return
         }
 
-        val targetUrl = serverUrl.value.trim().removeSuffix("/")
-        prefs.setServerUrl(targetUrl)
+        val targetUrl = prefs.getServerUrl()
 
         viewModelScope.launch {
             _uiState.value = UiState.Loading("Creating your account & linking device...")
@@ -231,6 +284,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun pairDevice() {
+        if (!ensureServerConfigured()) return
         val code = pairingCode.value.trim()
         if (code.isBlank()) {
             _uiState.value = UiState.Error("Please enter a 6-digit pairing code or scan a QR payload")
@@ -239,7 +293,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         viewModelScope.launch {
             _uiState.value = UiState.Loading("Pairing device with server...")
-            val result = repo.pairDevice(serverUrl.value, code)
+            val result = repo.pairDevice(prefs.getServerUrl(), code)
             result.onSuccess { msg ->
                 _uiState.value = UiState.Success(msg)
                 _currentScreen.value = Screen.Dashboard
@@ -247,6 +301,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _uiState.value = UiState.Error(err.message ?: "Failed to pair device")
             }
         }
+    }
+
+    /** Validates the currently entered server URL and persists it when valid. */
+    private fun ensureServerConfigured(): Boolean {
+        val validation = com.example.data.prefs.PreferenceManager.validateServerUrl(serverUrl.value)
+        if (!validation.isValid) {
+            serverUrlError.value = validation.error
+            _uiState.value = UiState.Error(validation.error ?: "Invalid server address")
+            return false
+        }
+        prefs.setServerUrl(validation.normalized!!)
+        serverUrlError.value = null
+        isServerConfigured.value = true
+        return true
     }
 
     fun syncNow() {
@@ -287,5 +355,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         data class Loading(val message: String) : UiState()
         data class Success(val message: String) : UiState()
         data class Error(val message: String) : UiState()
+    }
+
+    sealed class ConnectionUiState {
+        data object Idle : ConnectionUiState()
+        data object Testing : ConnectionUiState()
+        data class Success(val message: String) : ConnectionUiState()
+        data class Error(val message: String) : ConnectionUiState()
     }
 }

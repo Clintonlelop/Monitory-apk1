@@ -4,20 +4,26 @@
   "type": "module",
   "scripts": {
     "start": "node server/src/index.js",
-    "dev": "node --watch server/src/index.js"
+    "dev": "node --watch server/src/index.js",
+    "test": "npm --prefix server test",
+    "test:server": "npm --prefix server test",
+    "test:smoke": "node scripts/dashboard-smoke.mjs",
+    "test:xss": "node scripts/xss-regression.mjs",
+    "test:e2e": "node scripts/e2e-flow.mjs"
   },
   "dependencies": {
-    "bcrypt": "^6.0.0",
     "bcryptjs": "^2.4.3",
-    "cors": "^2.8.6",
-    "dotenv": "^16.6.1",
-    "express": "^4.22.3",
-    "jsonwebtoken": "^9.0.3",
-    "multer": "^1.4.5-lts.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.2",
     "pg": "^8.13.1",
     "qrcode": "^1.5.4",
-    "sqlite3": "^6.0.1",
-    "uuid": "^14.0.3",
-    "ws": "^8.22.0"
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@sparticuz/chromium": "^153.0.0",
+    "playwright-core": "^1.64.1"
   }
 }

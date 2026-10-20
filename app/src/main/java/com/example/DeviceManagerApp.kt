@@ -35,6 +35,10 @@ class DeviceManagerApp : Application() {
         apiClient = ApiClient(preferenceManager)
         webSocketManager = DeviceWebSocketManager(preferenceManager)
         repository = DeviceRepository(this, database, preferenceManager, apiClient, webSocketManager)
+
+        // Record complete crash diagnostics (full nested stack traces) for
+        // every uncaught exception before the default handler takes over.
+        com.example.diagnostics.CrashReporter.install(this)
     }
 
     private fun createNotificationChannels() {
