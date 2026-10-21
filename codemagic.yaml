@@ -30,7 +30,7 @@ workflows:
     scripts:
       - name: Prepare Gradle wrapper and signing keystores
         script: |
-          set -eux
+          set -eu
           chmod +x gradlew
 
           # Debug keystore from secure variable, or generated throwaway key.
@@ -107,3 +107,39 @@ workflows:
         notify:
           success: true
           failure: true
+
+  android-signed-release:
+    name: Build signed Android release APK
+    max_build_duration: 45
+    instance_type: mac_mini_m2
+    environment:
+      android_signing:
+        - monitory-release
+      vars:
+        GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx2048m -XX:+HeapDumpOnOutOfMemoryError"
+        REQUIRE_ANDROID_SIGNING: "true"
+      java: 17
+    scripts:
+      - name: Prepare Gradle wrapper
+        script: |
+          set -eu
+          chmod +x gradlew
+      - name: Run unit tests and build signed release
+        script: |
+          set -eu
+          ./gradlew --no-daemon test
+          ./gradlew --no-daemon assembleRelease
+      - name: Verify signed APK
+        script: |
+          set -eu
+          apk=$(find app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' -print -quit)
+          test -n "$apk"
+          test -s "$apk"
+          unzip -t "$apk" >/dev/null
+          apksigner=$(find "${ANDROID_SDK_ROOT:-$ANDROID_HOME}/build-tools" -type f -name apksigner -print | sort | tail -n 1)
+          test -x "$apksigner"
+          "$apksigner" verify --verbose --print-certs "$apk"
+    artifacts:
+      - app/build/outputs/apk/release/*.apk
+      - app/build/outputs/mapping/release/mapping.txt
+      - app/build/reports/**
